@@ -33,7 +33,7 @@ import numpy as np
 from tqdm import tqdm
 
 # Microsoft's IO utilities
-from utils.io import (
+from moge.utils.io import (
     write_depth,
     write_image,
     write_json,
@@ -263,7 +263,7 @@ def convert_frame(
     # Hypersim stores asset units.
     # Convert to meters.
 
-    depth *= meters_per_asset_unit
+    depth = load_hdf5(depth_path).astype(np.float32)
 
     # ------------------------------------------------------------------
     # Intrinsics
