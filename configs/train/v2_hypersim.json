@@ -10,7 +10,7 @@
         "datasets": [ 
             {
                 "name": "Hypersim",
-                "path": "/Users/petersingh/Desktop/Datasetsmr/moge_dataset",
+                "path": "/kaggle/input/datasets/peters777/moge-hypersim-converted/moge_dataset",
                 "label_type": "A",
                 "weight": 1.0,
                 "depth_unit": 1,
