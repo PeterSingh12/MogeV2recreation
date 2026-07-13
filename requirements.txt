@@ -1,4 +1,4 @@
-# The versions are not specified since my_moge should be compatible with most versions of the packages. 
+# The versions are not specified since moge should be compatible with most versions of the packages. 
 # If incompatibilities are found, consider upgrading to latest versions or installing the following recommended version of the package.
 torch           # >= 2.0.0
 torchvision

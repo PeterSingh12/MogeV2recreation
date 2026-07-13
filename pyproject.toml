@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "my_moge"
+name = "moge"
 version = "2.0.0"
-description = "my_moge: Unlocking Accurate Monocular Geometry Estimation for Open-Domain Images with Optimal Training Supervision"
+description = "moge: Unlocking Accurate Monocular Geometry Estimation for Open-Domain Images with Optimal Training Supervision"
 readme = "README.md"
 license = {text = "MIT"}
 dependencies = [
@@ -26,11 +26,11 @@ dependencies = [
 requires-python = ">=3.9"
 
 [project.urls]
-Homepage = "https://github.com/microsoft/my_moge"
+Homepage = "https://github.com/microsoft/moge"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["my_moge*"]
+include = ["moge*"]
 
 [project.scripts]
-my_moge = "my_moge.scripts.cli:main"
+moge = "moge.scripts.cli:main"

@@ -7,18 +7,18 @@ import click
 import torch
 import utils3d
 
-from my_moge.test.baseline import MGEBaselineInterface
+from moge.test.baseline import MGEBaselineInterface
 
 
 class Baseline(MGEBaselineInterface):
 
     def __init__(self, num_tokens: int, resolution_level: int, pretrained_model_name_or_path: str, use_fp16: bool, device: str = 'cuda:0', version: str = 'v1'):
         super().__init__()
-        from my_moge.model import import_model_class_by_version
-        my_mogeModel = import_model_class_by_version(version)
+        from moge.model import import_model_class_by_version
+        mogeModel = import_model_class_by_version(version)
         self.version = version
 
-        self.model = my_mogeModel.from_pretrained(pretrained_model_name_or_path).to(device).eval()
+        self.model = mogeModel.from_pretrained(pretrained_model_name_or_path).to(device).eval()
         
         self.device = torch.device(device)
         self.num_tokens = num_tokens
@@ -28,7 +28,7 @@ class Baseline(MGEBaselineInterface):
     @click.command()
     @click.option('--num_tokens', type=int, default=None)
     @click.option('--resolution_level', type=int, default=9)
-    @click.option('--pretrained', 'pretrained_model_name_or_path', type=str, default='Ruicheng/my_moge-vitl')
+    @click.option('--pretrained', 'pretrained_model_name_or_path', type=str, default='Ruicheng/moge-vitl')
     @click.option('--fp16', 'use_fp16', is_flag=True)
     @click.option('--device', type=str, default='cuda:0')
     @click.option('--version', type=str, default='v1')

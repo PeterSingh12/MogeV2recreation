@@ -11,7 +11,7 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as TF
 import cv2
 
-from my_moge.test.baseline import MGEBaselineInterface
+from moge.test.baseline import MGEBaselineInterface
 
 
 class Baseline(MGEBaselineInterface):

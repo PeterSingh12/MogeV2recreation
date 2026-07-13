@@ -28,8 +28,8 @@ from tqdm import tqdm, trange
 import mlflow
 torch.backends.cudnn.benchmark = False      # Varying input size, make sure cudnn benchmark is disabled
 
-from my_moge.train.dataloader import TrainDataLoaderPipeline
-from my_moge.train.losses import (
+from moge.train.dataloader import TrainDataLoaderPipeline
+from moge.train.losses import (
     affine_invariant_global_loss,
     affine_invariant_local_loss, 
     edge_loss,
@@ -40,11 +40,11 @@ from my_moge.train.losses import (
     normal_map_loss,
     monitoring, 
 )
-from my_moge.train.utils import build_optimizer, build_lr_scheduler
-from my_moge.utils.geometry_torch import intrinsics_to_fov
-from my_moge.utils.vis import colorize_depth, colorize_normal
-from my_moge.utils.tools import key_average, recursive_replace, CallbackOnException, flatten_nested_dict
-from my_moge.test.metrics import compute_metrics
+from moge.train.utils import build_optimizer, build_lr_scheduler
+from moge.utils.geometry_torch import intrinsics_to_fov
+from moge.utils.vis import colorize_depth, colorize_normal
+from moge.utils.tools import key_average, recursive_replace, CallbackOnException, flatten_nested_dict
+from moge.test.metrics import compute_metrics
 
 
 @click.command()
@@ -115,9 +115,9 @@ def main(
     # Initialize model
     print('Initialize model')
     with accelerator.local_main_process_first():
-        from my_moge.model import import_model_class_by_version
-        my_mogeModel = import_model_class_by_version(config['model_version'])      
-        model = my_mogeModel(**config['model'])
+        from moge.model import import_model_class_by_version
+        mogeModel = import_model_class_by_version(config['model_version'])      
+        model = mogeModel(**config['model'])
     count_total_parameters = sum(p.numel() for p in model.parameters())
     print(f'Total parameters: {count_total_parameters}')
 
@@ -209,7 +209,7 @@ def main(
     model, optimizer = accelerator.prepare(model, optimizer)
     if torch.version.hip and isinstance(model, torch.nn.parallel.DistributedDataParallel):
         # Hacking potential gradient synchronization issue in ROCm backend
-        from my_moge.model.utils import sync_ddp_hook
+        from moge.model.utils import sync_ddp_hook
         model.register_comm_hook(None, sync_ddp_hook)
 
     # Initialize training data pipeline

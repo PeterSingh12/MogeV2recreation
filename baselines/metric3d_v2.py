@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 import cv2
 
-from my_moge.test.baseline import MGEBaselineInterface
+from moge.test.baseline import MGEBaselineInterface
 
 
 class Baseline(MGEBaselineInterface):

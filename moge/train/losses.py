@@ -54,7 +54,7 @@ def affine_invariant_global_loss(
     loss = _smooth((pred_points - gt_points).abs() * weight[..., None], beta=beta).mean(dim=(-3, -2, -1))
 
     if sparsity_aware:
-        # Reweighting improves performance on sparse depth data. NOTE: this is not used in my_moge-1.
+        # Reweighting improves performance on sparse depth data. NOTE: this is not used in moge-1.
         sparsity = mask.float().mean(dim=(-2, -1)) / lr_mask.float().mean(dim=(-2, -1))
         loss = loss / (sparsity + 1e-7)
 
@@ -83,8 +83,8 @@ def compute_anchor_sampling_weight(
     num_test: int = 64
 ) -> torch.Tensor:
     # Importance sampling to balance the sampled probability of fine strutures.
-    # NOTE: my_moge-1 uses uniform random sampling instead of importance sampling.
-    #       This is an incremental trick introduced later than the publication of my_moge-1 paper.
+    # NOTE: moge-1 uses uniform random sampling instead of importance sampling.
+    #       This is an incremental trick introduced later than the publication of moge-1 paper.
 
     height, width = points.shape[-3:-1]
 
@@ -189,7 +189,7 @@ def affine_invariant_local_loss(
     loss = _smooth((pred_patch_points - gt_patch_points).abs() * patch_weight[..., None], beta=beta).mean(dim=(-3, -2, -1))    # [num_patches_nonempty]
     
     if sparsity_aware:
-        # Reweighting improves performance on sparse depth data. NOTE: this is not used in my_moge-1.
+        # Reweighting improves performance on sparse depth data. NOTE: this is not used in moge-1.
         sparsity = patch_mask.float().mean(dim=(-2, -1)) / patch_lr_mask.float().mean(dim=(-2, -1))
         loss = loss / (sparsity + 1e-7)
     loss = torch.scatter_reduce(torch.zeros(batch_size, dtype=dtype, device=device), dim=0, index=patch_batch_idx, src=loss, reduce='sum') / num_patches

@@ -3,7 +3,7 @@
 convert_hypersim.py
 
 Convert Apple Hypersim scenes into the dataset format expected by
-Microsoft my_moge.
+Microsoft moge.
 
 Output format:
 
@@ -225,7 +225,7 @@ def parse_args():
         "--output",
         type=Path,
         required=True,
-        help="my_moge dataset output",
+        help="moge dataset output",
     )
 
     return parser.parse_args()
@@ -243,7 +243,7 @@ def convert_frame(
     meters_per_asset_unit: float,
 ):
     """
-    Convert one Hypersim frame into one my_moge sample.
+    Convert one Hypersim frame into one moge sample.
     """
 
     # ------------------------------------------------------------------

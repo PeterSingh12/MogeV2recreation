@@ -15,11 +15,11 @@ import utils3d
 from huggingface_hub import hf_hub_download
 
 from ..utils.geometry_torch import normalized_view_plane_uv, recover_focal_shift, angle_diff_vec3
-from .myUtils import wrap_dinov2_attention_with_sdpa, wrap_module_with_gradient_checkpointing, unwrap_module_with_gradient_checkpointing
-from .myModules import DINOv2Encoder, MLP, ConvStack
+from .utils import wrap_dinov2_attention_with_sdpa, wrap_module_with_gradient_checkpointing, unwrap_module_with_gradient_checkpointing
+from .modules import DINOv2Encoder, MLP, ConvStack
 
     
-class my_mogeModel(nn.Module):
+class mogeModel(nn.Module):
     encoder: DINOv2Encoder
     neck: ConvStack
     points_head: ConvStack
@@ -38,7 +38,7 @@ class my_mogeModel(nn.Module):
         num_tokens_range: List[int] = [1200, 3600],
         **deprecated_kwargs
     ):
-        super(my_mogeModel, self).__init__()
+        super(mogeModel, self).__init__()
         if deprecated_kwargs:
             warnings.warn(f"The following deprecated/invalid arguments are ignored: {deprecated_kwargs}")
 
@@ -74,7 +74,7 @@ class my_mogeModel(nn.Module):
         self.encoder.onnx_compatible_mode = value
 
     @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path: Union[str, Path, IO[bytes]], model_kwargs: Optional[Dict[str, Any]] = None, **hf_kwargs) -> 'my_mogeModel':
+    def from_pretrained(cls, pretrained_model_name_or_path: Union[str, Path, IO[bytes]], model_kwargs: Optional[Dict[str, Any]] = None, **hf_kwargs) -> 'mogeModel':
         """
         Load a model from a checkpoint file.
 
@@ -85,7 +85,7 @@ class my_mogeModel(nn.Module):
         - `hf_kwargs`: additional keyword arguments to pass to the `hf_hub_download` function. Ignored if `pretrained_model_name_or_path` is a local path.
 
         ### Returns:
-        - A new instance of `my_moge` with the parameters loaded from the checkpoint.
+        - A new instance of `moge` with the parameters loaded from the checkpoint.
         """
         if Path(pretrained_model_name_or_path).exists():
             checkpoint_path = pretrained_model_name_or_path

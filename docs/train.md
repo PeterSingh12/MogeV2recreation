@@ -1,11 +1,11 @@
 
 # Training 
 
-This document provides instructions for training and finetuning the my_moge model.
+This document provides instructions for training and finetuning the moge model.
 
 ## Additional Requirements
 
-The following packages other than those listed in [`pyproject.toml`](../pyproject.toml) are required for training and finetuning the my_moge model:
+The following packages other than those listed in [`pyproject.toml`](../pyproject.toml) are required for training and finetuning the moge model:
 
 ```
 accelerate
@@ -25,7 +25,7 @@ somedataset
 ├── folder1 
 │   ├── instance1       # Each instance is in a folder
 │   │   ├── image.jpg   # RGB image.
-│   │   ├── depth.png   # 16-bit depth. See my_moge/utils/io.py for details
+│   │   ├── depth.png   # 16-bit depth. See moge/utils/io.py for details
 │   │   ├── meta.json   # Stores "intrinsics" as a 3x3 matrix
 │   │   └── ...         # Other componests such as segmentation mask, normal map etc.
 ...
@@ -33,11 +33,11 @@ somedataset
 
 * `.index.txt` is placed at top directory to store a list of instance paths in this dataset. The dataloader will look for instances in this list. You may also use a custom split, e.g. `.train.txt`, `.val.txt` and specify it in the configuration file.
 
-* For depth images, it is recommended to use `read_depth()` and `write_depth()` in [`my_moge/utils/io.py`](../my_moge/utils/io.py) to read and write depth images. The depth is stored in logarithmic scale in 16-bit PNG format, offering a balanced precision, dynamic range and compression ratio compared to 16-bit and 32-bit EXR and linear depth formats. It also encodes `NaN` and `Inf` values for invalid depth values.
+* For depth images, it is recommended to use `read_depth()` and `write_depth()` in [`moge/utils/io.py`](../moge/utils/io.py) to read and write depth images. The depth is stored in logarithmic scale in 16-bit PNG format, offering a balanced precision, dynamic range and compression ratio compared to 16-bit and 32-bit EXR and linear depth formats. It also encodes `NaN` and `Inf` values for invalid depth values.
 
 * The `meta.json` should be a dictionary containing the key `intrinsics`, which are **normalized** camera parameters. You may put more metadata.
 
-* We also support reading and storing segementation masks for evaluation data (see paper evaluation of local points), which are saved in PNG format with semantic labels stored in png metadata as JSON strings. See `read_segmentation()` and `write_segmentation()` in [`my_moge/utils/io.py`](../my_moge/utils/io.py) for details.
+* We also support reading and storing segementation masks for evaluation data (see paper evaluation of local points), which are saved in PNG format with semantic labels stored in png metadata as JSON strings. See `read_segmentation()` and `write_segmentation()` in [`moge/utils/io.py`](../moge/utils/io.py) for details.
 
 
 ### Visual inspection
@@ -45,17 +45,17 @@ somedataset
 We provide a script to visualize the data and check the data quality. It will export the instance as a PLY file for visualization of point cloud.
 
 ```bash
-python my_moge/scripts/vis_data.py PATH_TO_INSTANCE --ply [-o SOMEWHERE_ELSE_TO_SAVE_VIS]
+python moge/scripts/vis_data.py PATH_TO_INSTANCE --ply [-o SOMEWHERE_ELSE_TO_SAVE_VIS]
 ```
 
 ### DataLoader
 
-Our training dataloaders is customized to handle loading data, performing perspective crop, and augmentation in a multithreading pipeline. Please refer to [`my_moge/train/dataloader.py`](../my_moge/train/dataloader.py) if you have any concern.
+Our training dataloaders is customized to handle loading data, performing perspective crop, and augmentation in a multithreading pipeline. Please refer to [`moge/train/dataloader.py`](../moge/train/dataloader.py) if you have any concern.
 
 
 ## Configuration
 
-See [`configs/train/v1.json`](../configs/train/v1.json) for an example configuration file. The configuration file defines the hyperparameters for training the my_moge model. 
+See [`configs/train/v1.json`](../configs/train/v1.json) for an example configuration file. The configuration file defines the hyperparameters for training the moge model. 
 Here is a commented configuration for reference:
 
 ```json
@@ -95,14 +95,14 @@ Here is a commented configuration for reference:
         "last_conv_channels": 32,
         "last_conv_size": 1
     },
-    "optimizer": {                          # Reflection-like optimizer configurations. See my_moge.train.utils.py build_optimizer() for details.
+    "optimizer": {                          # Reflection-like optimizer configurations. See moge.train.utils.py build_optimizer() for details.
         "type": "AdamW",
         "params": [
             {"params": {"include": ["*"], "exclude": ["*backbone.*"]}, "lr": 1e-4},
             {"params": {"include": ["*backbone.*"]}, "lr": 1e-5}
         ]
     },
-    "lr_scheduler": {                       # Reflection-like lr_scheduler configurations. See my_moge.train.utils.py build_lr_scheduler() for details.
+    "lr_scheduler": {                       # Reflection-like lr_scheduler configurations. See moge.train.utils.py build_lr_scheduler() for details.
         "type": "SequentialLR",
         "params": {
             "schedulers": [
@@ -140,12 +140,12 @@ Here is a commented configuration for reference:
 
 ## Run Training 
 
-Launch the training script [`my_moge/scripts/train.py`](../my_moge/scripts/train.py). Note that we use [`accelerate`](https://github.com/huggingface/accelerate) for distributed training. 
+Launch the training script [`moge/scripts/train.py`](../moge/scripts/train.py). Note that we use [`accelerate`](https://github.com/huggingface/accelerate) for distributed training. 
 
 ```bash
 accelerate launch \
     --num_processes 8 \
-    my_moge/scripts/train.py \
+    moge/scripts/train.py \
     --config configs/train/v1.json \
     --workspace workspace/debug \
     --gradient_accumulation_steps 2 \
@@ -159,9 +159,9 @@ accelerate launch \
 
 ## Finetuning
 
-To finetune the pre-trained my_moge model, download the model checkpoint and put it in a local directory, e.g. `pretrained/my_moge-vitl.pt`.
+To finetune the pre-trained moge model, download the model checkpoint and put it in a local directory, e.g. `pretrained/moge-vitl.pt`.
 
-> NOTE: when finetuning pretrained my_moge model, a much lower learning rate is required. 
+> NOTE: when finetuning pretrained moge model, a much lower learning rate is required. 
 The suggested learning rate for finetuning is not greater than 1e-5 for the head and 1e-6 for the backbone. 
 And the batch size is recommended to be 32 at least. 
 The settings in default configuration are not optimal for specific datasets and may require further tuning.
@@ -169,12 +169,12 @@ The settings in default configuration are not optimal for specific datasets and 
 ```bash
 accelerate launch \
     --num_processes 8 \
-    my_moge/scripts/train.py \
+    moge/scripts/train.py \
     --config configs/train/v1.json \
     --workspace workspace/debug \
     --gradient_accumulation_steps 2 \
     --batch_size_forward 2 \
-    --checkpoint pretrained/my_moge-vitl.pt \
+    --checkpoint pretrained/moge-vitl.pt \
     --enable_gradient_checkpointing True \
     --vis_every 1000 \
     --enable_mlflow True

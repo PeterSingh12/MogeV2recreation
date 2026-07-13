@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 import torchvision.transforms.functional as TF
 
-from my_moge.test.baseline import MGEBaselineInterface
+from moge.test.baseline import MGEBaselineInterface
 
 
 class Baseline(MGEBaselineInterface):

@@ -80,7 +80,7 @@ def warp_perspective(
     - For `nearest` with sparse input, use mask-aware nearest resize to avoid losing points.
     - For `bilinear` or `nearest` with dense input, directly use cv2.remap.
 
-    - `transform` is the matrix that transforms homy_mogeneous pixel coordinates of source image to those of target image, i.e., `p_tgt = transform @ p_src`.
+    - `transform` is the matrix that transforms homogeneous pixel coordinates of source image to those of target image, i.e., `p_tgt = transform @ p_src`.
     """
     
     tgt_height, tgt_width = tgt_size

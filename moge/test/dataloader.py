@@ -138,7 +138,7 @@ class EvalDataLoaderPipeline:
         fx, fy = 1.0 / tgt_horizontal, 1.0 / tgt_vertical
         tgt_intrinsics = utils3d.np.intrinsics_from_focal_center(fx, fy, 0.5, 0.5).astype(np.float32)
         
-        # do homy_mogeneous transformation with the rotation and intrinsics
+        # do homogeneous transformation with the rotation and intrinsics
         # 4.1 The image and depth is resized first to approximately the same pixel size as the target image with PIL's antialiasing resampling
         tgt_pixel_w, tgt_pixel_h = tgt_horizontal / tgt_width, tgt_vertical / tgt_height        # (should be exactly the same for x and y axes)
         rescaled_w, rescaled_h = int(raw_width * raw_pixel_w / tgt_pixel_w), int(raw_height * raw_pixel_h / tgt_pixel_h)

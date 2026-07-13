@@ -1,11 +1,11 @@
-# my_moge-2 Normal Estimation
+# moge-2 Normal Estimation
 
 <img src="..\assets\normal_comaprison.jpg">
 <div align="center">
   <p style="text-align:center;">Qualitative comparison of normal estimation with <a href="https://github.com/prs-eth/marigold">Marigold</a> and <a href="https://github.com/YvanYin/Metric3D">Metric3D V2</a></p>
 </div>
 
-> NOTE: Normal estimation was implemented after the submission of the my_moge-2 paper and is therefore not included in the original publication. This feature required minimal additional effort, and we do not claim any novel technical contribution.
+> NOTE: Normal estimation was implemented after the submission of the moge-2 paper and is therefore not included in the original publication. This feature required minimal additional effort, and we do not claim any novel technical contribution.
 
 We added a lightweight convolutional head and trained the normal output using a squared angular loss:
 
