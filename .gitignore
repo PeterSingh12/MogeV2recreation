@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+.history/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+.env/
+.conda/
+
+# Datasets
+downloads/
+datasets/
+data/
+extract/
+
+# Model checkpoints
+pretrained/
+checkpoints/
+*.pth
+*.pt
+*.ckpt
+
+# Outputs
+mlruns/
+infer_output/
+video_output/
+eval_output/
+eval_dump/
+vis/
+tmp/
+workspace/
+debug/
+
+# Large media
+videos/
+test_videos/
+test_images/
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
