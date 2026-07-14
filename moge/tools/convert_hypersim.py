@@ -260,11 +260,6 @@ def convert_frame(
 
     depth = load_hdf5(depth_path).astype(np.float32)
 
-    # Hypersim stores asset units.
-    # Convert to meters.
-
-    depth = load_hdf5(depth_path).astype(np.float32)
-
     # ------------------------------------------------------------------
     # Intrinsics
     # ------------------------------------------------------------------
@@ -425,9 +420,29 @@ def convert_dataset(
 
     global_index = []
 
-    sample_index = 0
+    # Load existing index if it exists
+    index_file = output_root / ".index.txt"
+
+    if index_file.exists():
+        global_index = index_file.read_text().splitlines()
+    else:
+        global_index = []
+
+    # Continue numbering instead of overwriting
+    sample_index = len(global_index)
 
     for scene in scene_dirs:
+
+        camera_file = (
+            scene
+            / "_detail"
+            / "cam_00"
+            / "camera_keyframe_positions.hdf5"
+        )
+
+        if not camera_file.exists():
+            print(f"Skipping {scene.name} (not downloaded)")
+            continue
 
         scene_index, sample_index = convert_scene(
 
@@ -441,17 +456,9 @@ def convert_dataset(
 
         global_index.extend(scene_index)
 
-    with open(
-
-        output_root / ".index.txt",
-
-        "w",
-
-    ) as f:
-
-        for item in global_index:
-
-            f.write(item + "\n")
+    with open(output_root / ".index.txt", "w") as f:
+      for item in global_index:
+          f.write(item + "\n")
 
     print()
 
