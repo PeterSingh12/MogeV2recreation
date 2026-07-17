@@ -46,7 +46,26 @@
             {
                 "name": "Waymo",
                 "path": "/kaggle/input/datasets/peters777/moge-dataset-waymo/moge_dataset_waymo",
-                "label_type": "A",
+                "label_type": "B",
+                "weight": 1.0,
+                "depth_unit": 1,
+                "fov_range_relative": [
+                    0.5,
+                    1.0
+                ],
+                "image_augmentation": [
+                    "jittering",
+                    "jpeg_loss",
+                    "blurring",
+                    "shot_noise",
+                    "dof"
+                ],
+                "finite_depth_mask": "only_known"
+            },
+            {
+                "name": "TartanAir",
+                "path": "/kaggle/input/datasets/peters777/moge-dataset-tartanair/moge_dataset_tartanair",
+                "label_type": "C",
                 "weight": 1.0,
                 "depth_unit": 1,
                 "fov_range_relative": [
