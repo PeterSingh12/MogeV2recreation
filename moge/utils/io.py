@@ -88,24 +88,48 @@ def write_image(path: Union[str, os.PathLike, IO], image: np.ndarray, quality: i
 
 def read_depth(path: Union[str, os.PathLike, IO]) -> np.ndarray:
     """
-    Read a depth image, return float32 depth array of shape (H, W).
+    Read a depth image.
+    Supports:
+      1. MoGe PNGs (with near/far metadata)
+      2. Plain uint16 depth PNGs stored in millimetres
     """
     if isinstance(path, (str, os.PathLike)):
         data = Path(path).read_bytes()
     else:
         data = path.read()
+
     pil_image = Image.open(io.BytesIO(data))
-    near = float(pil_image.info.get('near'))
-    far = float(pil_image.info.get('far'))
+
+    # ---------- Fallback for normal uint16 PNG ----------
+    if "near" not in pil_image.info or "far" not in pil_image.info:
+        depth = np.array(pil_image).astype(np.float32)
+
+        # assume depth stored in millimetres
+        depth = depth / 1000.0
+
+        # 0 means invalid
+        depth[depth == 0] = np.nan
+
+        return depth
+
+    # ---------- Original MoGe format ----------
+    near = float(pil_image.info["near"])
+    far = float(pil_image.info["far"])
+
     depth = np.array(pil_image)
-    mask_nan, mask_inf = depth == 0, depth == 65535
+    mask_nan = depth == 0
+    mask_inf = depth == 65535
+
     depth = (depth.astype(np.float32) - 1) / 65533
-    depth = near ** (1 - depth) * far ** depth 
-    if 'unit' in pil_image.info:    # Legacy support for depth units
-        unit = float(pil_image.info.get('unit'))
-        depth = depth * unit
+    depth = near ** (1 - depth) * far ** depth
+
+    if "unit" in pil_image.info:
+        unit = float(pil_image.info["unit"])
+        depth *= unit
+
     depth[mask_nan] = np.nan
     depth[mask_inf] = np.inf
+
     return depth
 
 
