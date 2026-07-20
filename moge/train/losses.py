@@ -277,19 +277,18 @@ def mask_l2_loss(pred_mask: torch.Tensor, gt_mask_pos: torch.Tensor, gt_mask_neg
 def mask_bce_loss(pred_mask_prob, gt_mask_pos, gt_mask_neg):
 
     if torch.isnan(pred_mask_prob).any():
-        print("NaNs in pred_mask_prob")
         raise RuntimeError("NaNs in pred_mask_prob")
 
-    print(
-        "mask range:",
-        pred_mask_prob.min().item(),
-        pred_mask_prob.max().item()
-    )
+    if (pred_mask_prob < 0).any() or (pred_mask_prob > 1).any():
+        raise RuntimeError(
+            f"pred_mask_prob outside [0,1]: "
+            f"{pred_mask_prob.min().item()} .. {pred_mask_prob.max().item()}"
+        )
 
     loss = (gt_mask_pos | gt_mask_neg) * F.binary_cross_entropy(
         pred_mask_prob,
         gt_mask_pos.float(),
-        reduction='none'
+        reduction="none"
     )
 
     loss = loss.mean(dim=(-2, -1))
