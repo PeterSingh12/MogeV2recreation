@@ -335,6 +335,13 @@ def main(
 
                     loss = sum(loss_list) / len(loss_list)
                     
+                    # Skip bad batches
+                    if not torch.isfinite(loss):
+                        if accelerator.is_main_process:
+                            pbar.write(f"NaN/Inf loss, skip batch")
+                        optimizer.zero_grad(set_to_none=True)
+                        continue
+
                     # Backward & update
                     accelerator.backward(loss)
                     if accelerator.sync_gradients:
