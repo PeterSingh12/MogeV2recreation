@@ -277,6 +277,13 @@ def mask_l2_loss(pred_mask: torch.Tensor, gt_mask_pos: torch.Tensor, gt_mask_neg
 def mask_bce_loss(pred_mask_prob, gt_mask_pos, gt_mask_neg):
 
     if torch.isnan(pred_mask_prob).any():
+        print("pred_mask_prob has NaN:", torch.isnan(pred_mask_prob).any().item())
+        print("pred_mask_prob has Inf:", torch.isinf(pred_mask_prob).any().item())
+        print(
+            "pred_mask_prob min/max:",
+            torch.nan_to_num(pred_mask_prob).min().item(),
+            torch.nan_to_num(pred_mask_prob).max().item(),
+        )
         raise RuntimeError("NaNs in pred_mask_prob")
 
     if (pred_mask_prob < 0).any() or (pred_mask_prob > 1).any():
