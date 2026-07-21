@@ -116,8 +116,8 @@ def main(
     print('Initialize model')
     with accelerator.local_main_process_first():
         from moge.model import import_model_class_by_version
-        mogeModel = import_model_class_by_version(config['model_version'])      
-        model = mogeModel(**config['model'])
+        MoGeModel = import_model_class_by_version(config['model_version'])      
+        model = MoGeModel(**config['model'])
     count_total_parameters = sum(p.numel() for p in model.parameters())
     print(f'Total parameters: {count_total_parameters}')
 
@@ -335,13 +335,6 @@ def main(
 
                     loss = sum(loss_list) / len(loss_list)
                     
-                    # Skip bad batches
-                    if not torch.isfinite(loss):
-                        if accelerator.is_main_process:
-                            pbar.write(f"NaN/Inf loss, skip batch")
-                        optimizer.zero_grad(set_to_none=True)
-                        continue
-
                     # Backward & update
                     accelerator.backward(loss)
                     if accelerator.sync_gradients:

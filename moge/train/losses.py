@@ -54,7 +54,7 @@ def affine_invariant_global_loss(
     loss = _smooth((pred_points - gt_points).abs() * weight[..., None], beta=beta).mean(dim=(-3, -2, -1))
 
     if sparsity_aware:
-        # Reweighting improves performance on sparse depth data. NOTE: this is not used in moge-1.
+        # Reweighting improves performance on sparse depth data. NOTE: this is not used in MoGe-1.
         sparsity = mask.float().mean(dim=(-2, -1)) / lr_mask.float().mean(dim=(-2, -1))
         loss = loss / (sparsity + 1e-7)
 
@@ -83,8 +83,8 @@ def compute_anchor_sampling_weight(
     num_test: int = 64
 ) -> torch.Tensor:
     # Importance sampling to balance the sampled probability of fine strutures.
-    # NOTE: moge-1 uses uniform random sampling instead of importance sampling.
-    #       This is an incremental trick introduced later than the publication of moge-1 paper.
+    # NOTE: MoGe-1 uses uniform random sampling instead of importance sampling.
+    #       This is an incremental trick introduced later than the publication of MoGe-1 paper.
 
     height, width = points.shape[-3:-1]
 
@@ -189,7 +189,7 @@ def affine_invariant_local_loss(
     loss = _smooth((pred_patch_points - gt_patch_points).abs() * patch_weight[..., None], beta=beta).mean(dim=(-3, -2, -1))    # [num_patches_nonempty]
     
     if sparsity_aware:
-        # Reweighting improves performance on sparse depth data. NOTE: this is not used in moge-1.
+        # Reweighting improves performance on sparse depth data. NOTE: this is not used in MoGe-1.
         sparsity = patch_mask.float().mean(dim=(-2, -1)) / patch_lr_mask.float().mean(dim=(-2, -1))
         loss = loss / (sparsity + 1e-7)
     loss = torch.scatter_reduce(torch.zeros(batch_size, dtype=dtype, device=device), dim=0, index=patch_batch_idx, src=loss, reduce='sum') / num_patches
@@ -233,6 +233,16 @@ def normal_loss(points: torch.Tensor, gt_points: torch.Tensor) -> torch.Tensor:
 
     MIN_ANGLE, MAX_ANGLE, BETA_RAD = math.radians(1), math.radians(90), math.radians(3)
 
+    upxleft = F.normalize(upxleft, dim=-1, eps=1e-6)
+    leftxdown = F.normalize(leftxdown, dim=-1, eps=1e-6)
+    downxright = F.normalize(downxright, dim=-1, eps=1e-6)
+    rightxup = F.normalize(rightxup, dim=-1, eps=1e-6)
+
+    gt_upxleft = F.normalize(gt_upxleft, dim=-1, eps=1e-6)
+    gt_leftxdown = F.normalize(gt_leftxdown, dim=-1, eps=1e-6)
+    gt_downxright = F.normalize(gt_downxright, dim=-1, eps=1e-6)
+    gt_rightxup = F.normalize(gt_rightxup, dim=-1, eps=1e-6)
+
     loss = mask_upxleft * _smooth(angle_diff_vec3(upxleft, gt_upxleft).clamp(MIN_ANGLE, MAX_ANGLE), beta=BETA_RAD) \
             + mask_leftxdown * _smooth(angle_diff_vec3(leftxdown, gt_leftxdown).clamp(MIN_ANGLE, MAX_ANGLE), beta=BETA_RAD) \
             + mask_downxright * _smooth(angle_diff_vec3(downxright, gt_downxright).clamp(MIN_ANGLE, MAX_ANGLE), beta=BETA_RAD) \
@@ -274,38 +284,26 @@ def mask_l2_loss(pred_mask: torch.Tensor, gt_mask_pos: torch.Tensor, gt_mask_neg
     return loss, {}
 
 
-def mask_bce_loss(pred_mask_prob, gt_mask_pos, gt_mask_neg):
-
-    if torch.isnan(pred_mask_prob).any():
-        print("pred_mask_prob has NaN:", torch.isnan(pred_mask_prob).any().item())
-        print("pred_mask_prob has Inf:", torch.isinf(pred_mask_prob).any().item())
-        print(
-            "pred_mask_prob min/max:",
-            torch.nan_to_num(pred_mask_prob).min().item(),
-            torch.nan_to_num(pred_mask_prob).max().item(),
-        )
-        raise RuntimeError("NaNs in pred_mask_prob")
-
-    if (pred_mask_prob < 0).any() or (pred_mask_prob > 1).any():
-        raise RuntimeError(
-            f"pred_mask_prob outside [0,1]: "
-            f"{pred_mask_prob.min().item()} .. {pred_mask_prob.max().item()}"
-        )
-
-    loss = (gt_mask_pos | gt_mask_neg) * F.binary_cross_entropy(
-        pred_mask_prob,
-        gt_mask_pos.float(),
-        reduction="none"
-    )
-
+def mask_bce_loss(pred_mask_prob: torch.Tensor, gt_mask_pos: torch.Tensor, gt_mask_neg: torch.Tensor) -> torch.Tensor:
+    loss = (gt_mask_pos | gt_mask_neg) * F.binary_cross_entropy(pred_mask_prob, gt_mask_pos.float(), reduction='none')
     loss = loss.mean(dim=(-2, -1))
     return loss, {}
 
 
 def metric_scale_loss(scale_pred: torch.Tensor, scale_gt: torch.Tensor):
-    valid = scale_gt > 0
-    return torch.where(valid, F.mse_loss(scale_pred.log(), torch.where(valid, scale_gt.log(), 0), reduction='none'), 0), {}
+    valid = (scale_gt > 0) & (scale_pred > 0)
 
+    loss = torch.where(
+        valid,
+        F.mse_loss(
+            scale_pred.clamp(min=1e-6).log(),
+            scale_gt.clamp(min=1e-6).log(),
+            reduction="none",
+        ),
+        torch.zeros_like(scale_gt),
+    )
+
+    return loss, {}
 
 def normal_map_loss(pred_normal: torch.Tensor, gt_normal: torch.Tensor) -> torch.Tensor:
     mask = torch.isfinite(gt_normal).all(dim=-1)
