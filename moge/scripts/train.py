@@ -289,6 +289,18 @@ def main(
                         num_tokens = accelerate.utils.broadcast_object_list([random.randint(*config['model']['num_tokens_range'])])[0]
                     with torch.autocast(device_type=accelerator.device.type, dtype=torch.float16, enabled=enable_mixed_precision):
                         output = model(image, num_tokens=num_tokens)
+                        for k, v in output.items():
+                            if torch.is_tensor(v):
+                                print(
+                                    f"{k}: "
+                                    f"shape={tuple(v.shape)} "
+                                    f"nan={torch.isnan(v).any().item()} "
+                                    f"inf={torch.isinf(v).any().item()} "
+                                    f"min={torch.nan_to_num(v).min().item():.6f} "
+                                    f"max={torch.nan_to_num(v).max().item():.6f}"
+                                )
+
+                        raise SystemExit
                     pred_points, pred_mask, pred_normal, pred_metric_scale = (output.get(k, None) for k in ['points', 'mask', 'normal', 'metric_scale'])
 
                     # Compute loss (per instance)
