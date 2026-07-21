@@ -65,7 +65,7 @@
             {
                 "name": "TartanAir",
                 "path": "/kaggle/input/datasets/peters777/moge-dataset-tartanair/moge_dataset_tartanair",
-                "label_type": "C",
+                "label_type": "A",
                 "weight": 1.0,
                 "depth_unit": 1,
                 "fov_range_relative": [

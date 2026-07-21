@@ -295,7 +295,15 @@ def align_points_scale_z_shift(points_src: torch.Tensor, points_tgt: torch.Tenso
     tgt_1, src_1 = torch.gather(points_tgt_00z.flatten(-2), dim=1, index=index_1[..., None]).squeeze(-1), torch.gather(points_src_00z.flatten(-2), dim=1, index=index_1[..., None]).squeeze(-1)
     tgt_2, src_2 = torch.gather(points_tgt.flatten(-2), dim=1, index=index_2[..., None]).squeeze(-1), torch.gather(points_src.flatten(-2), dim=1, index=index_2[..., None]).squeeze(-1)
 
-    scale = (tgt_2 - tgt_1) / torch.where(src_2 != src_1, src_2 - src_1, 1.0)
+    denom = src_2 - src_1
+    denom = torch.where(
+        denom.abs() > 1e-6,
+        denom,
+        torch.full_like(denom, 1e-6),
+    )
+
+    scale = (tgt_2 - tgt_1) / denom
+    scale = torch.nan_to_num(scale, nan=0.0, posinf=0.0, neginf=0.0)
     shift = torch.gather(points_tgt_00z, dim=1, index=(index_1 // 3)[..., None, None].expand(-1, -1, 3)).squeeze(-2) - scale[..., None] * torch.gather(points_src_00z, dim=1, index=(index_1 // 3)[..., None, None].expand(-1, -1, 3)).squeeze(-2)
     scale, shift = scale.reshape(batch_shape), shift.reshape(*batch_shape, 3)
 

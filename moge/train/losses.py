@@ -43,7 +43,8 @@ def affine_invariant_global_loss(
     # Align
     pred_points_lr, gt_points_lr, lr_mask = utils3d.pt.masked_nearest_resize(pred_points, gt_points, mask=mask, size=(align_resolution, align_resolution))
     scale, shift = align_points_scale_z_shift(pred_points_lr.flatten(-3, -2), gt_points_lr.flatten(-3, -2), lr_mask.flatten(-2, -1) / gt_points_lr[..., 2].flatten(-2, -1).clamp_min(1e-2), trunc=trunc)
-    valid = scale > 0
+    valid = (scale > 0) & torch.isfinite(scale)
+    scale = torch.where(torch.isfinite(scale), scale, torch.zeros_like(scale))
     scale, shift = torch.where(valid, scale, 0), torch.where(valid[..., None], shift, 0)
 
     pred_points = scale[..., None, None, None] * pred_points + shift[..., None, None, :]
