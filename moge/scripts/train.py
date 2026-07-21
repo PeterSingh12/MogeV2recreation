@@ -298,16 +298,6 @@ def main(
                         num_tokens = accelerate.utils.broadcast_object_list([random.randint(*config['model']['num_tokens_range'])])[0]
                     with torch.autocast(device_type=accelerator.device.type, dtype=torch.float16, enabled=enable_mixed_precision):
                         output = model(image, num_tokens=num_tokens)
-                        for k, v in output.items():
-                            if torch.is_tensor(v):
-                                print(
-                                    f"{k}: "
-                                    f"shape={tuple(v.shape)} "
-                                    f"nan={torch.isnan(v).any().item()} "
-                                    f"inf={torch.isinf(v).any().item()} "
-                                    f"min={torch.nan_to_num(v).min().item():.6f} "
-                                    f"max={torch.nan_to_num(v).max().item():.6f}"
-                                )
                     pred_points, pred_mask, pred_normal, pred_metric_scale = (output.get(k, None) for k in ['points', 'mask', 'normal', 'metric_scale'])
 
                     # Compute loss (per instance)
@@ -358,8 +348,6 @@ def main(
                             **misc_dict,
                         })
 
-                    loss = sum(loss_list) / len(loss_list)
-
                     if len(loss_list) == 0:
                         optimizer.zero_grad()
                         continue
@@ -405,7 +393,7 @@ def main(
                 records = []
 
             # Save model weight checkpoint
-            if accelerator.is_main_process and (i_step % save_every == 0):
+            if accelerator.is_main_process and (i_step % save_every == 500):
                 # NOTE: Writing checkpoint is done in a separate thread to avoid blocking the main process
                 pbar.write(f'Save checkpoint: {i_step:08d}')
                 Path(workspace, 'checkpoint').mkdir(parents=True, exist_ok=True)
