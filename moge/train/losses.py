@@ -284,8 +284,23 @@ def mask_l2_loss(pred_mask: torch.Tensor, gt_mask_pos: torch.Tensor, gt_mask_neg
     return loss, {}
 
 
-def mask_bce_loss(pred_mask_prob: torch.Tensor, gt_mask_pos: torch.Tensor, gt_mask_neg: torch.Tensor) -> torch.Tensor:
-    loss = (gt_mask_pos | gt_mask_neg) * F.binary_cross_entropy(pred_mask_prob, gt_mask_pos.float(), reduction='none')
+def mask_bce_loss(pred_mask_prob: torch.Tensor,
+                  gt_mask_pos: torch.Tensor,
+                  gt_mask_neg: torch.Tensor) -> torch.Tensor:
+
+    pred_mask_prob = torch.nan_to_num(
+        pred_mask_prob,
+        nan=0.5,
+        posinf=1.0,
+        neginf=0.0,
+    ).clamp(0.0, 1.0)
+
+    loss = (gt_mask_pos | gt_mask_neg) * F.binary_cross_entropy(
+        pred_mask_prob,
+        gt_mask_pos.float(),
+        reduction='none'
+    )
+
     loss = loss.mean(dim=(-2, -1))
     return loss, {}
 
