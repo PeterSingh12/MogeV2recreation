@@ -392,77 +392,59 @@ def main(
                             print(f'Error while logging metrics to mlflow: {e}')
                 records = []
 
-           # Model checkpoint
-            with io.BytesIO() as f:
-                torch.save({
-                    'model_config': config['model'],
-                    'model': accelerator.unwrap_model(model).state_dict(),
-                }, f)
-                checkpoint_bytes = f.getvalue()
-            model_future = save_checkpoint_executor.submit(
-                _write_bytes_retry_loop,
-                Path(workspace, 'checkpoint', f'{i_step:08d}.pt'),
-                checkpoint_bytes
-            )
+            # Save model weight checkpoint
+            if accelerator.is_main_process and (i_step % save_every == 0):
+                # NOTE: Writing checkpoint is done in a separate thread to avoid blocking the main process
+                pbar.write(f'Save checkpoint: {i_step:08d}')
+                Path(workspace, 'checkpoint').mkdir(parents=True, exist_ok=True)
 
-            # Optimizer checkpoint
-            with io.BytesIO() as f:
-                torch.save({
-                    'model_config': config['model'],
-                    'step': i_step,
-                    'optimizer': optimizer.state_dict(),
-                    'lr_scheduler': lr_scheduler.state_dict(),
-                }, f)
-                checkpoint_bytes = f.getvalue()
-            optimizer_future = save_checkpoint_executor.submit(
-                _write_bytes_retry_loop,
-                Path(workspace, 'checkpoint', f'{i_step:08d}_optimizer.pt'),
-                checkpoint_bytes
-            )
-
-            # EMA checkpoint
-            ema_future = None
-            if enable_ema:
+                # Model checkpoint
                 with io.BytesIO() as f:
                     torch.save({
                         'model_config': config['model'],
-                        'model': ema_model.module.state_dict(),
+                        'model': accelerator.unwrap_model(model).state_dict(),
                     }, f)
                     checkpoint_bytes = f.getvalue()
-                ema_future = save_checkpoint_executor.submit(
-                    _write_bytes_retry_loop,
-                    Path(workspace, 'checkpoint', f'{i_step:08d}_ema.pt'),
-                    checkpoint_bytes
+                save_checkpoint_executor.submit(
+                    _write_bytes_retry_loop, Path(workspace, 'checkpoint', f'{i_step:08d}.pt'), checkpoint_bytes
                 )
 
-            # Latest checkpoint
-            with io.BytesIO() as f:
-                torch.save({
-                    'model_config': config['model'],
-                    'step': i_step,
-                }, f)
-                checkpoint_bytes = f.getvalue()
-            latest_future = save_checkpoint_executor.submit(
-                _write_bytes_retry_loop,
-                Path(workspace, 'checkpoint', 'latest.pt'),
-                checkpoint_bytes
-            )
+                # Optimizer checkpoint
+                with io.BytesIO() as f:
+                    torch.save({
+                        'model_config': config['model'],
+                        'step': i_step,
+                        'optimizer': optimizer.state_dict(),
+                        'lr_scheduler': lr_scheduler.state_dict(),
+                    }, f)
+                    checkpoint_bytes = f.getvalue()
+                save_checkpoint_executor.submit(
+                    _write_bytes_retry_loop, Path(workspace, 'checkpoint', f'{i_step:08d}_optimizer.pt'), checkpoint_bytes
+                )
+                
+                # EMA model checkpoint
+                if enable_ema:
+                    with io.BytesIO() as f:
+                        torch.save({
+                            'model_config': config['model'],
+                            'model': ema_model.module.state_dict(),
+                        }, f)
+                        checkpoint_bytes = f.getvalue()
+                    save_checkpoint_executor.submit(
+                        _write_bytes_retry_loop, Path(workspace, 'checkpoint', f'{i_step:08d}_ema.pt'), checkpoint_bytes
+                    )
 
-            # Wait for all writes to finish
-            model_future.result()
-            optimizer_future.result()
-            latest_future.result()
-            if ema_future is not None:
-                ema_future.result()
-
-            # Delete checkpoint older than the last two
-            old_step = i_step - 2 * save_every
-            if old_step >= 0:
-                for suffix in [".pt", "_optimizer.pt", "_ema.pt"]:
-                    old_file = Path(workspace, "checkpoint", f"{old_step:08d}{suffix}")
-                    if old_file.exists():
-                        old_file.unlink()
-                        
+                # Latest checkpoint
+                with io.BytesIO() as f:
+                    torch.save({
+                        'model_config': config['model'],
+                        'step': i_step,
+                    }, f)
+                    checkpoint_bytes = f.getvalue()
+                save_checkpoint_executor.submit(
+                    _write_bytes_retry_loop, Path(workspace, 'checkpoint', 'latest.pt'), checkpoint_bytes
+                )
+            
             # Visualize
             if vis_every > 0 and accelerator.is_main_process and (i_step == initial_step or i_step % vis_every == 0):
                 unwrapped_model = accelerator.unwrap_model(model)
