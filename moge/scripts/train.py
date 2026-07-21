@@ -393,7 +393,7 @@ def main(
                 records = []
 
             # Save model weight checkpoint
-            if accelerator.is_main_process and (i_step % save_every == 500):
+            if accelerator.is_main_process and (i_step % save_every == 0):
                 # NOTE: Writing checkpoint is done in a separate thread to avoid blocking the main process
                 pbar.write(f'Save checkpoint: {i_step:08d}')
                 Path(workspace, 'checkpoint').mkdir(parents=True, exist_ok=True)
