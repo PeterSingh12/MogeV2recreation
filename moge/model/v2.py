@@ -19,7 +19,7 @@ from .utils import wrap_dinov2_attention_with_sdpa, wrap_module_with_gradient_ch
 from .modules import DINOv2Encoder, MLP, ConvStack
 
     
-class mogeModel(nn.Module):
+class MoGeModel(nn.Module):
     encoder: DINOv2Encoder
     neck: ConvStack
     points_head: ConvStack
@@ -38,7 +38,7 @@ class mogeModel(nn.Module):
         num_tokens_range: List[int] = [1200, 3600],
         **deprecated_kwargs
     ):
-        super(mogeModel, self).__init__()
+        super(MoGeModel, self).__init__()
         if deprecated_kwargs:
             warnings.warn(f"The following deprecated/invalid arguments are ignored: {deprecated_kwargs}")
 
@@ -74,7 +74,7 @@ class mogeModel(nn.Module):
         self.encoder.onnx_compatible_mode = value
 
     @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path: Union[str, Path, IO[bytes]], model_kwargs: Optional[Dict[str, Any]] = None, **hf_kwargs) -> 'mogeModel':
+    def from_pretrained(cls, pretrained_model_name_or_path: Union[str, Path, IO[bytes]], model_kwargs: Optional[Dict[str, Any]] = None, **hf_kwargs) -> 'MoGeModel':
         """
         Load a model from a checkpoint file.
 
@@ -85,7 +85,7 @@ class mogeModel(nn.Module):
         - `hf_kwargs`: additional keyword arguments to pass to the `hf_hub_download` function. Ignored if `pretrained_model_name_or_path` is a local path.
 
         ### Returns:
-        - A new instance of `moge` with the parameters loaded from the checkpoint.
+        - A new instance of `MoGe` with the parameters loaded from the checkpoint.
         """
         if Path(pretrained_model_name_or_path).exists():
             checkpoint_path = pretrained_model_name_or_path

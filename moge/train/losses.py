@@ -43,8 +43,7 @@ def affine_invariant_global_loss(
     # Align
     pred_points_lr, gt_points_lr, lr_mask = utils3d.pt.masked_nearest_resize(pred_points, gt_points, mask=mask, size=(align_resolution, align_resolution))
     scale, shift = align_points_scale_z_shift(pred_points_lr.flatten(-3, -2), gt_points_lr.flatten(-3, -2), lr_mask.flatten(-2, -1) / gt_points_lr[..., 2].flatten(-2, -1).clamp_min(1e-2), trunc=trunc)
-    valid = (scale > 0) & torch.isfinite(scale)
-    scale = torch.where(torch.isfinite(scale), scale, torch.zeros_like(scale))
+    valid = scale > 0
     scale, shift = torch.where(valid, scale, 0), torch.where(valid[..., None], shift, 0)
 
     pred_points = scale[..., None, None, None] * pred_points + shift[..., None, None, :]
@@ -234,16 +233,6 @@ def normal_loss(points: torch.Tensor, gt_points: torch.Tensor) -> torch.Tensor:
 
     MIN_ANGLE, MAX_ANGLE, BETA_RAD = math.radians(1), math.radians(90), math.radians(3)
 
-    upxleft = F.normalize(upxleft, dim=-1, eps=1e-6)
-    leftxdown = F.normalize(leftxdown, dim=-1, eps=1e-6)
-    downxright = F.normalize(downxright, dim=-1, eps=1e-6)
-    rightxup = F.normalize(rightxup, dim=-1, eps=1e-6)
-
-    gt_upxleft = F.normalize(gt_upxleft, dim=-1, eps=1e-6)
-    gt_leftxdown = F.normalize(gt_leftxdown, dim=-1, eps=1e-6)
-    gt_downxright = F.normalize(gt_downxright, dim=-1, eps=1e-6)
-    gt_rightxup = F.normalize(gt_rightxup, dim=-1, eps=1e-6)
-
     loss = mask_upxleft * _smooth(angle_diff_vec3(upxleft, gt_upxleft).clamp(MIN_ANGLE, MAX_ANGLE), beta=BETA_RAD) \
             + mask_leftxdown * _smooth(angle_diff_vec3(leftxdown, gt_leftxdown).clamp(MIN_ANGLE, MAX_ANGLE), beta=BETA_RAD) \
             + mask_downxright * _smooth(angle_diff_vec3(downxright, gt_downxright).clamp(MIN_ANGLE, MAX_ANGLE), beta=BETA_RAD) \
@@ -285,41 +274,16 @@ def mask_l2_loss(pred_mask: torch.Tensor, gt_mask_pos: torch.Tensor, gt_mask_neg
     return loss, {}
 
 
-def mask_bce_loss(pred_mask_prob: torch.Tensor,
-                  gt_mask_pos: torch.Tensor,
-                  gt_mask_neg: torch.Tensor) -> torch.Tensor:
-
-    pred_mask_prob = torch.nan_to_num(
-        pred_mask_prob,
-        nan=0.5,
-        posinf=1.0,
-        neginf=0.0,
-    ).clamp(0.0, 1.0)
-
-    loss = (gt_mask_pos | gt_mask_neg) * F.binary_cross_entropy(
-        pred_mask_prob,
-        gt_mask_pos.float(),
-        reduction='none'
-    )
-
+def mask_bce_loss(pred_mask_prob: torch.Tensor, gt_mask_pos: torch.Tensor, gt_mask_neg: torch.Tensor) -> torch.Tensor:
+    loss = (gt_mask_pos | gt_mask_neg) * F.binary_cross_entropy(pred_mask_prob, gt_mask_pos.float(), reduction='none')
     loss = loss.mean(dim=(-2, -1))
     return loss, {}
 
 
 def metric_scale_loss(scale_pred: torch.Tensor, scale_gt: torch.Tensor):
-    valid = (scale_gt > 0) & (scale_pred > 0)
+    valid = scale_gt > 0
+    return torch.where(valid, F.mse_loss(scale_pred.log(), torch.where(valid, scale_gt.log(), 0), reduction='none'), 0), {}
 
-    loss = torch.where(
-        valid,
-        F.mse_loss(
-            scale_pred.clamp(min=1e-6).log(),
-            scale_gt.clamp(min=1e-6).log(),
-            reduction="none",
-        ),
-        torch.zeros_like(scale_gt),
-    )
-
-    return loss, {}
 
 def normal_map_loss(pred_normal: torch.Tensor, gt_normal: torch.Tensor) -> torch.Tensor:
     mask = torch.isfinite(gt_normal).all(dim=-1)

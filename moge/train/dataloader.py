@@ -8,7 +8,6 @@ import traceback
 import itertools
 from numbers import Number
 import io
-import time
 
 import numpy as np
 import cv2
@@ -142,7 +141,6 @@ class TrainDataLoaderPipeline:
         return instance
 
     def _process_instance(self, instance: Dict[str, Union[np.ndarray, str, float, bool]]):
-
         raw_image, raw_depth, raw_intrinsics, label_type = instance['image'], instance['depth'], instance['intrinsics'], instance['label_type']
         raw_normal, raw_normal_mask = utils3d.np.depth_map_to_normal_map(raw_depth, intrinsics=raw_intrinsics, mask=np.isfinite(raw_depth), edge_threshold=88)
         raw_normal = np.where(raw_normal_mask[..., None], raw_normal, np.nan)
