@@ -214,8 +214,12 @@ def main(
 
     # Initialize training data pipeline
     with accelerator.local_main_process_first():
-        train_data_pipe = TrainDataLoaderPipeline(config['data'], batch_size_forward)
-
+        train_data_pipe = TrainDataLoaderPipeline(
+            config['data'],
+            batch_size_forward,
+            num_load_workers=2,
+            num_process_workers=2,
+        )
     def _write_bytes_retry_loop(save_path: Path, data: bytes):
         while True:
             try:
