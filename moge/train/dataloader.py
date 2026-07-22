@@ -25,7 +25,7 @@ from ..utils.data_augmentation import sample_perspective, warp_perspective, imag
 
 
 class TrainDataLoaderPipeline:
-    def __init__(self, config: dict, batch_size: int, num_load_workers: int = 4, num_process_workers: int = 8, buffer_size: int = 8):
+    def __init__(self, config: dict, batch_size: int, num_load_workers: int = 2, num_process_workers: int = 4, buffer_size: int = 2):
         self.config = config
 
         self.batch_size = batch_size
