@@ -11,6 +11,7 @@ import itertools
 from contextlib import nullcontext
 from concurrent.futures import ThreadPoolExecutor
 import io
+import time
 
 import numpy as np
 import cv2
@@ -280,7 +281,13 @@ def main(
             i_accumulate, weight_accumulate = 0, 0
             while i_accumulate < gradient_accumulation_steps:
                 # Load batch
+                t0 = time.time()
                 batch = train_data_pipe.get()
+                dt = time.time() - t0
+
+                if dt>30:
+                    print(f"[SLOW BATCH FETCH] {dt:.2f}s", flush=True)
+                    
                 image, gt_depth, gt_normal, gt_mask_fin, gt_mask_inf, gt_intrinsics, label_type, is_metric = batch['image'], batch['depth'], batch['normal'], batch['depth_mask_fin'], batch['depth_mask_inf'], batch['intrinsics'], batch['label_type'], batch['is_metric']
                 image, gt_depth, gt_normal, gt_mask_fin, gt_mask_inf, gt_intrinsics = image.to(device), gt_depth.to(device), gt_normal.to(device), gt_mask_fin.to(device), gt_mask_inf.to(device), gt_intrinsics.to(device)
                 current_batch_size = image.shape[0]

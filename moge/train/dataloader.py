@@ -123,9 +123,6 @@ class TrainDataLoaderPipeline:
             yield batch
 
     def _load_instance(self, instance: dict):
-        t0 = time.time()
-        print(f"[LOAD] {instance['dataset']} | {instance['filename']}", f"{time.time() - t0:.2f}s", flush=True)
-
         try:
             image = read_image(Path(instance['path'], 'image.jpg'))
             depth = read_depth(Path(instance['path'], self.datasets[instance['dataset']].get('depth', 'depth.png')))
@@ -142,13 +139,10 @@ class TrainDataLoaderPipeline:
         except Exception as e:
             print(f"Failed to load instance {instance['dataset']}/{instance['filename']} because of exception:", e)
             instance.update(self.invalid_instance)
-
-        print(f"[LOAD DONE] {instance['dataset']} | {instance['filename']}", flush=True)
         return instance
 
     def _process_instance(self, instance: Dict[str, Union[np.ndarray, str, float, bool]]):
-        t0 = time.time()
-        print(f"[PROCESS START] {instance['dataset']} | {instance['filename']}", f"{time.time() - t0:.2f}s",flush=True)
+
         raw_image, raw_depth, raw_intrinsics, label_type = instance['image'], instance['depth'], instance['intrinsics'], instance['label_type']
         raw_normal, raw_normal_mask = utils3d.np.depth_map_to_normal_map(raw_depth, intrinsics=raw_intrinsics, mask=np.isfinite(raw_depth), edge_threshold=88)
         raw_normal = np.where(raw_normal_mask[..., None], raw_normal, np.nan)
@@ -234,7 +228,6 @@ class TrainDataLoaderPipeline:
             "normal": torch.from_numpy(tgt_normal).float(),
             'intrinsics': torch.from_numpy(tgt_intrinsics).float(),
         })
-        print(f"[PROCESS DONE] {instance['dataset']} | {instance['filename']}", flush=True)
         return instance
 
     def _collate_batch(self, instances: List[Dict[str, Any]]):
