@@ -127,9 +127,12 @@ def image_color_augmentation(image: np.ndarray, augmentations: List[Dict[str, An
         assert depth is not None, 'Depth map is required for DOF augmentation'
         if rng.uniform() < 0.5:
             dof_strength = rng.integers(12)
-            disp = 1 / depth
-            finite_mask = np.isfinite(depth)
-            disp_min, disp_max = disp[finite_mask].min(), disp[finite_mask].max()
+            disp = 1.0 / np.maximum(depth, 1e-6)
+
+            finite_mask = np.isfinite(disp)
+
+            disp_min = disp[finite_mask].min()
+            disp_max = disp[finite_mask].max()
             disp = cv2.inpaint(np.nan_to_num(disp, nan=1), np.isnan(disp).astype(np.uint8), 3, cv2.INPAINT_TELEA).clip(0, disp_max)
             dof_focus = rng.uniform(disp_min, disp_max)
             image = depth_of_field(image, disp, dof_focus, dof_strength)
@@ -247,4 +250,5 @@ def depth_of_field(
         output[mask] = precomputed[r][mask]
         
     return output
+
 

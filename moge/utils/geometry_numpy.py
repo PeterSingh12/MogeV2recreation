@@ -259,3 +259,4 @@ def depth_of_field(
         output[mask] = precomputed[r][mask]
         
     return output
+

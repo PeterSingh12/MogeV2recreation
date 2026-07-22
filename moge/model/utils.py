@@ -47,3 +47,4 @@ def sync_ddp_hook(state, bucket: torch.distributed.GradBucket) -> torch.futures.
     fut = torch.futures.Future()
     fut.set_result(grad)
     return fut
+

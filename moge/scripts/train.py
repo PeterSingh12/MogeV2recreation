@@ -11,6 +11,7 @@ import itertools
 from contextlib import nullcontext
 from concurrent.futures import ThreadPoolExecutor
 import io
+import time
 
 import numpy as np
 import cv2
@@ -247,6 +248,15 @@ def main(
             for i_batch, batch in enumerate(tqdm(batches_for_vis, desc='Visualize GT', leave=False)):
                 image, gt_depth, gt_normal, gt_intrinsics, info = batch['image'], batch['depth'], batch['normal'], batch['intrinsics'], batch['info']
                 gt_points = utils3d.pt.depth_map_to_point_map(gt_depth, intrinsics=gt_intrinsics)
+                gt_points = torch.nan_to_num(
+                    gt_points,
+                    nan=0.0,
+                    posinf=0.0,
+                    neginf=0.0,
+                )
+
+                valid = torch.isfinite(gt_points).all(dim=-1)
+                gt_points = torch.where(valid[..., None], gt_points, torch.zeros_like(gt_points))
                 for i_instance in range(batch['image'].shape[0]):
                     idx = i_batch * batch_size_forward + i_instance
                     image_i = (image[i_instance].numpy().transpose(1, 2, 0) * 255).astype(np.uint8)
@@ -271,7 +281,13 @@ def main(
             i_accumulate, weight_accumulate = 0, 0
             while i_accumulate < gradient_accumulation_steps:
                 # Load batch
+                t0 = time.time()
                 batch = train_data_pipe.get()
+                dt = time.time() - t0
+
+                if dt>30:
+                    print(f"[SLOW BATCH FETCH] {dt:.2f}s", flush=True)
+                    
                 image, gt_depth, gt_normal, gt_mask_fin, gt_mask_inf, gt_intrinsics, label_type, is_metric = batch['image'], batch['depth'], batch['normal'], batch['depth_mask_fin'], batch['depth_mask_inf'], batch['intrinsics'], batch['label_type'], batch['is_metric']
                 image, gt_depth, gt_normal, gt_mask_fin, gt_mask_inf, gt_intrinsics = image.to(device), gt_depth.to(device), gt_normal.to(device), gt_mask_fin.to(device), gt_mask_inf.to(device), gt_intrinsics.to(device)
                 current_batch_size = image.shape[0]
@@ -320,7 +336,13 @@ def main(
                                 raise ValueError(f'Undefined loss function: {v["function"]}')
                         weight_dict = {'.'.join(k): v for k, v in flatten_nested_dict(weight_dict).items()}
                         loss_dict = {'.'.join(k): v for k, v in flatten_nested_dict(loss_dict).items()}
-                        loss_ = sum([weight_dict[k] * loss_dict[k] for k in loss_dict], start=torch.tensor(0.0, device=device))
+                        loss_ = sum(
+                            [weight_dict[k] * loss_dict[k] for k in loss_dict],
+                            start=torch.tensor(0.0, device=device),
+                        )
+
+                        if not torch.isfinite(loss_):
+                            continue
                         loss_list.append(loss_)
                         
                         if torch.isnan(loss_).item():
@@ -333,7 +355,15 @@ def main(
                             **misc_dict,
                         })
 
+                    if len(loss_list) == 0:
+                        optimizer.zero_grad()
+                        continue
+
                     loss = sum(loss_list) / len(loss_list)
+
+                    if not torch.isfinite(loss):
+                        optimizer.zero_grad()
+                        continue
                     
                     # Backward & update
                     accelerator.backward(loss)

@@ -252,3 +252,4 @@ class ConvStack(nn.Module):
             if i < len(self.res_blocks) - 1:
                 x = self.resamplers[i](x)
         return out_features
+
